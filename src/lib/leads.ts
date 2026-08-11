@@ -28,11 +28,11 @@ export type Lead = {
   goal: string;
   trainingType: string;
   preferredTime: string;
-  message?: string;
+  message?: string | undefined;
   status: LeadStatus;
   source: string;
   createdAt: string;
-  followUpOn?: string;
+  followUpOn?: string | undefined;
   notes: LeadNote[];
 };
 

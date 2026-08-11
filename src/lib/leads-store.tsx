@@ -20,7 +20,7 @@ export type NewLeadInput = {
   goal: string;
   trainingType: string;
   preferredTime: string;
-  message?: string;
+  message?: string | undefined;
 };
 
 type LeadsContextValue = {
