@@ -149,7 +149,7 @@ export function SiteHeader() {
                 openTrial();
               }}
             >
-              Book free trial
+              Book your free trial
             </Button>
           </nav>
         </div>
