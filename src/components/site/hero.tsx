@@ -2,7 +2,7 @@ import { ArrowRight, Star } from "lucide-react";
 
 import heroImage from "@/assets/hero-gym.jpg";
 import { Button } from "@/components/ui/button";
-import { gym, stats } from "@/lib/demo-data";
+import { stats } from "@/lib/demo-data";
 import { useTrialDialog } from "@/lib/trial-dialog";
 
 export function Hero() {

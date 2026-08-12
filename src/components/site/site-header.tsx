@@ -1,19 +1,20 @@
 import * as React from "react";
 import { Link } from "@tanstack/react-router";
-import { Menu, X, Flame } from "lucide-react";
+import { Menu, X, Flame, MessageCircle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { DemoBadge } from "@/components/demo-badge";
 import { gym } from "@/lib/demo-data";
+import { whatsappLink, whatsappDefaultMessage } from "@/lib/site-config";
 import { useTrialDialog } from "@/lib/trial-dialog";
 import { cn } from "@/lib/utils";
 
 const navItems = [
-  { href: "#about", label: "About" },
   { href: "#programs", label: "Programs" },
   { href: "#memberships", label: "Memberships" },
-  { href: "#trainers", label: "Trainers" },
+  { href: "#trainers", label: "Coaches" },
   { href: "#gallery", label: "Gallery" },
+  { href: "#about", label: "About" },
   { href: "#contact", label: "Contact" },
 ];
 
@@ -39,7 +40,7 @@ export function SiteHeader() {
       )}
     >
       <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between gap-3 px-5 md:h-18 md:px-8">
-        <a href="#top" className="flex items-center gap-2">
+        <a href="#top" className="flex min-w-0 items-center gap-2" aria-label={`${gym.shortName} — back to top`}>
           <span className="flex size-9 items-center justify-center rounded-md bg-ember">
             <Flame className="size-5 text-primary-foreground" aria-hidden="true" />
           </span>
@@ -65,10 +66,25 @@ export function SiteHeader() {
 
         <div className="flex items-center gap-2">
           <Button
+            variant="ghost"
+            size="icon"
+            asChild
+            className="min-h-11 min-w-11"
+          >
+            <a
+              href={whatsappLink(whatsappDefaultMessage)}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Message us on WhatsApp"
+            >
+              <MessageCircle aria-hidden="true" />
+            </a>
+          </Button>
+          <Button
             variant="outlineLight"
             size="sm"
             asChild
-            className="hidden sm:inline-flex"
+            className="hidden lg:inline-flex"
           >
             <Link to="/demo-admin">Demo dashboard</Link>
           </Button>
@@ -78,12 +94,11 @@ export function SiteHeader() {
           <Button
             variant="ghost"
             size="icon"
-            className="lg:hidden"
+            className="min-h-11 min-w-11 lg:hidden"
             aria-label={open ? "Close menu" : "Open menu"}
             aria-expanded={open}
             onClick={() => setOpen((v) => !v)}
           >
-            {open ? <Menu className="hidden" /> : null}
             {open ? <X aria-hidden="true" /> : <Menu aria-hidden="true" />}
           </Button>
         </div>
