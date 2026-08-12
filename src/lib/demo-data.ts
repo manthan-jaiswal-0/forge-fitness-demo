@@ -12,10 +12,10 @@ export const gym = {
 } as const;
 
 export const stats = [
-  { value: "1,200+", label: "Sessions coached / year" },
-  { value: "8", label: "Certified coaches" },
-  { value: "6", label: "Training programs" },
-  { value: "5,000", label: "Sq. ft. training floor" },
+  { value: "6", label: "Coached programs" },
+  { value: "Max 6", label: "People per group session" },
+  { value: "05:30", label: "Doors open, weekdays" },
+  { value: "Free", label: "First trial session" },
 ] as const;
 
 export const programs = [
