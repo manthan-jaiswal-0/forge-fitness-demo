@@ -2,7 +2,7 @@ import { ArrowRight, Star } from "lucide-react";
 
 import heroImage from "@/assets/hero-gym.jpg";
 import { Button } from "@/components/ui/button";
-import { gym, stats } from "@/lib/demo-data";
+import { stats } from "@/lib/demo-data";
 import { useTrialDialog } from "@/lib/trial-dialog";
 
 export function Hero() {
@@ -15,6 +15,8 @@ export function Hero() {
         alt="Weights and benches on the training floor at Forge Fitness Mumbai"
         width={1600}
         height={1104}
+        fetchPriority="high"
+        decoding="async"
         className="absolute inset-0 size-full object-cover"
       />
       <div
@@ -36,16 +38,16 @@ export function Hero() {
 
         <div className="mt-8 flex flex-col gap-3 sm:flex-row">
           <Button variant="hero" size="lg" onClick={openTrial} className="sm:w-auto">
-            Book free trial <ArrowRight aria-hidden="true" />
+            Book your free trial <ArrowRight aria-hidden="true" />
           </Button>
           <Button variant="outlineLight" size="lg" asChild>
-            <a href="#programs">See programs</a>
+            <a href="#programs">Explore programs</a>
           </Button>
         </div>
 
-        <p className="mt-5 flex items-center gap-2 text-sm text-muted-foreground">
-          <Star className="size-4 fill-primary text-primary" aria-hidden="true" />
-          Free trial session · No card required · {gym.phoneDisplay}
+        <p className="mt-5 flex items-start gap-2 text-sm text-muted-foreground">
+          <Star className="mt-0.5 size-4 shrink-0 fill-primary text-primary" aria-hidden="true" />
+          <span>No payment required · Personalised introduction · Choose your preferred time</span>
         </p>
 
         <dl className="mt-10 grid grid-cols-2 gap-x-4 gap-y-6 border-t border-border/60 pt-8 md:grid-cols-4">

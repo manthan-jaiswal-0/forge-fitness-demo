@@ -1,5 +1,5 @@
 import * as React from "react";
-import { CheckCircle2, Loader2 } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Loader2, MessageCircle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -20,17 +20,20 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { DemoBadge } from "@/components/demo-badge";
-import { fitnessGoals, preferredTimes, trainingTypes, gym } from "@/lib/demo-data";
+import { fitnessGoals, preferredTimes, programOptions, gym } from "@/lib/demo-data";
+import { whatsappLink } from "@/lib/site-config";
 import { useLeads } from "@/lib/leads-store";
+import { submitLead, type LeadPayload } from "@/lib/leads-api";
 
-type Errors = Partial<Record<"name" | "phone" | "email" | "goal" | "trainingType" | "preferredTime", string>>;
+type FieldKey = "name" | "phone" | "email" | "goal" | "program" | "preferredTime" | "message";
+type Errors = Partial<Record<FieldKey, string>>;
 
-const emptyForm = {
+const emptyForm: Record<FieldKey, string> = {
   name: "",
   phone: "",
   email: "",
   goal: "",
-  trainingType: "",
+  program: "",
   preferredTime: "",
   message: "",
 };
@@ -45,45 +48,71 @@ export function BookTrialDialog({
   const { addLead } = useLeads();
   const [form, setForm] = React.useState(emptyForm);
   const [errors, setErrors] = React.useState<Errors>({});
-  const [state, setState] = React.useState<"form" | "sending" | "done">("form");
+  const [state, setState] = React.useState<"form" | "sending" | "done" | "error">("form");
   const [reference, setReference] = React.useState("");
+  const [submittedName, setSubmittedName] = React.useState("");
 
-  const set = (key: keyof typeof emptyForm, value: string) => {
+  const set = (key: FieldKey, value: string) => {
     setForm((f) => ({ ...f, [key]: value }));
     setErrors((e) => ({ ...e, [key]: undefined }));
   };
 
   function validate(): boolean {
     const next: Errors = {};
-    if (form.name.trim().length < 2) next.name = "Please enter your name.";
-    if (!/^[+0-9 ()-]{8,}$/.test(form.phone.trim()))
-      next.phone = "Enter a valid phone number.";
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim()))
-      next.email = "Enter a valid email address.";
-    if (!form.goal) next.goal = "Choose a goal.";
-    if (!form.trainingType) next.trainingType = "Choose a training type.";
-    if (!form.preferredTime) next.preferredTime = "Choose a preferred time.";
+    if (form.name.trim().length < 2) next.name = "Please enter your full name.";
+
+    const phone = form.phone.trim();
+    const digits = phone.replace(/\D/g, "");
+    if (!phone) next.phone = "Please enter a phone number.";
+    else if (!/^[+0-9 ()-]+$/.test(phone) || digits.length < 8 || digits.length > 15)
+      next.phone = "Enter a valid phone number (8–15 digits).";
+
+    if (form.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(form.email.trim()))
+      next.email = "Enter a valid email address, or leave it blank.";
+
+    if (!form.goal) next.goal = "Choose the goal closest to yours.";
+
     setErrors(next);
     return Object.keys(next).length === 0;
   }
 
-  function handleSubmit(event: React.FormEvent) {
+  async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     if (!validate()) return;
     setState("sending");
-    window.setTimeout(() => {
-      const lead = addLead({
-        name: form.name.trim(),
-        phone: form.phone.trim(),
-        email: form.email.trim(),
-        goal: form.goal,
-        trainingType: form.trainingType,
-        preferredTime: form.preferredTime,
-        message: form.message.trim() || undefined,
+
+    const payload: LeadPayload = {
+      name: form.name.trim(),
+      phone: form.phone.trim(),
+      email: form.email.trim() || undefined,
+      goal: form.goal,
+      program: form.program || undefined,
+      preferredTime: form.preferredTime || undefined,
+      message: form.message.trim() || undefined,
+      source: "Website — Book Free Trial",
+    };
+
+    try {
+      const result = await submitLead(payload, {
+        persist: (data) => {
+          const lead = addLead({
+            name: data.name,
+            phone: data.phone,
+            email: data.email ?? "",
+            goal: data.goal,
+            trainingType: data.program ?? "Not specified",
+            preferredTime: data.preferredTime ?? "Flexible",
+            message: data.message,
+          });
+          return { id: lead.id, createdAt: lead.createdAt };
+        },
       });
-      setReference(lead.id);
+      setSubmittedName(payload.name.split(" ")[0] ?? payload.name);
+      setReference(result.id);
       setState("done");
-    }, 900);
+    } catch {
+      setState("error");
+    }
   }
 
   function handleOpenChange(next: boolean) {
@@ -101,11 +130,17 @@ export function BookTrialDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-h-[92dvh] overflow-y-auto sm:max-w-lg">
         {state === "done" ? (
-          <SuccessState reference={reference} onClose={() => handleOpenChange(false)} />
+          <SuccessState
+            name={submittedName}
+            reference={reference}
+            onClose={() => handleOpenChange(false)}
+          />
+        ) : state === "error" ? (
+          <ErrorState onRetry={() => setState("form")} />
         ) : (
           <>
             <DialogHeader>
-              <div className="mb-1 flex items-center gap-2">
+              <div className="mb-1 flex flex-wrap items-center gap-2">
                 <DemoBadge />
                 <span className="text-xs text-muted-foreground">
                   Sample enquiry — no data leaves your browser
@@ -113,24 +148,25 @@ export function BookTrialDialog({
               </div>
               <DialogTitle className="text-2xl text-display">Book your free trial</DialogTitle>
               <DialogDescription>
-                Tell us a little about you and the team will confirm a session time.
+                No payment required. Tell us your goal and a coach will call to confirm a time.
               </DialogDescription>
             </DialogHeader>
 
             <form onSubmit={handleSubmit} noValidate className="space-y-4">
-              <Field id="name" label="Full name" error={errors.name}>
+              <Field id="name" label="Full name" required error={errors.name}>
                 <Input
                   id="name"
                   autoComplete="name"
                   value={form.name}
                   onChange={(e) => set("name", e.target.value)}
                   aria-invalid={!!errors.name}
-                  placeholder="Your name"
+                  aria-describedby={errors.name ? "name-error" : undefined}
+                  required
                 />
               </Field>
 
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field id="phone" label="Phone" error={errors.phone}>
+                <Field id="phone" label="Phone number" required error={errors.phone}>
                   <Input
                     id="phone"
                     type="tel"
@@ -139,10 +175,11 @@ export function BookTrialDialog({
                     value={form.phone}
                     onChange={(e) => set("phone", e.target.value)}
                     aria-invalid={!!errors.phone}
-                    placeholder="+91 ..."
+                    aria-describedby={errors.phone ? "phone-error" : undefined}
+                    required
                   />
                 </Field>
-                <Field id="email" label="Email" error={errors.email}>
+                <Field id="email" label="Email" hint="Optional" error={errors.email}>
                   <Input
                     id="email"
                     type="email"
@@ -150,12 +187,12 @@ export function BookTrialDialog({
                     value={form.email}
                     onChange={(e) => set("email", e.target.value)}
                     aria-invalid={!!errors.email}
-                    placeholder="you@example.com"
+                    aria-describedby={errors.email ? "email-error" : undefined}
                   />
                 </Field>
               </div>
 
-              <Field id="goal" label="Fitness goal" error={errors.goal}>
+              <Field id="goal" label="Fitness goal" required error={errors.goal}>
                 <SelectField
                   id="goal"
                   placeholder="Select a goal"
@@ -167,29 +204,27 @@ export function BookTrialDialog({
               </Field>
 
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field id="trainingType" label="Preferred training" error={errors.trainingType}>
+                <Field id="program" label="Preferred program" hint="Optional">
                   <SelectField
-                    id="trainingType"
-                    placeholder="Select type"
-                    value={form.trainingType}
-                    options={[...trainingTypes]}
-                    onChange={(v) => set("trainingType", v)}
-                    invalid={!!errors.trainingType}
+                    id="program"
+                    placeholder="Select a program"
+                    value={form.program}
+                    options={programOptions}
+                    onChange={(v) => set("program", v)}
                   />
                 </Field>
-                <Field id="preferredTime" label="Preferred time" error={errors.preferredTime}>
+                <Field id="preferredTime" label="Preferred time" hint="Optional">
                   <SelectField
                     id="preferredTime"
-                    placeholder="Select time"
+                    placeholder="Select a time"
                     value={form.preferredTime}
                     options={[...preferredTimes]}
                     onChange={(v) => set("preferredTime", v)}
-                    invalid={!!errors.preferredTime}
                   />
                 </Field>
               </div>
 
-              <Field id="message" label="Message (optional)">
+              <Field id="message" label="Message" hint="Optional">
                 <Textarea
                   id="message"
                   rows={3}
@@ -209,10 +244,10 @@ export function BookTrialDialog({
                 {state === "sending" ? (
                   <>
                     <Loader2 className="animate-spin" aria-hidden="true" />
-                    Sending enquiry
+                    Sending request
                   </>
                 ) : (
-                  "Send my trial request"
+                  "Request my free trial"
                 )}
               </Button>
               <p className="text-center text-xs text-muted-foreground">
@@ -226,7 +261,15 @@ export function BookTrialDialog({
   );
 }
 
-function SuccessState({ reference, onClose }: { reference: string; onClose: () => void }) {
+function SuccessState({
+  name,
+  reference,
+  onClose,
+}: {
+  name: string;
+  reference: string;
+  onClose: () => void;
+}) {
   return (
     <div className="py-4 text-center" role="status" aria-live="polite">
       <div className="mx-auto flex size-16 items-center justify-center rounded-full bg-success/15">
@@ -234,11 +277,11 @@ function SuccessState({ reference, onClose }: { reference: string; onClose: () =
       </div>
       <DialogHeader className="mt-5">
         <DialogTitle className="text-center text-2xl text-display">
-          Enquiry received
+          Trial request received
         </DialogTitle>
         <DialogDescription className="text-center">
-          Thanks — your free trial request has reached the {gym.shortName} front desk.
-          A coach will call you within one working day to confirm your slot.
+          Thanks{name ? `, ${name}` : ""} — a member of the {gym.shortName} team will contact you
+          shortly to confirm your session.
         </DialogDescription>
       </DialogHeader>
 
@@ -258,16 +301,58 @@ function SuccessState({ reference, onClose }: { reference: string; onClose: () =
       </dl>
 
       <p className="mx-auto mt-4 max-w-sm text-xs text-muted-foreground">
-        Demo behaviour: this enquiry has been added to the demo dashboard so you can see how
-        the gym would work the lead.
+        Demo behaviour: this enquiry has been added to the demo dashboard so you can see how the
+        gym would work the lead.
       </p>
 
       <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-center">
-        <Button variant="hero" onClick={onClose}>
-          Done
+        <Button variant="hero" asChild>
+          <a
+            href={whatsappLink(
+              `Hi ${gym.shortName}, I just requested a free trial (ref ${reference}).`,
+            )}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <MessageCircle aria-hidden="true" /> Continue on WhatsApp
+          </a>
+        </Button>
+        <Button variant="outlineLight" onClick={onClose}>
+          Close
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function ErrorState({ onRetry }: { onRetry: () => void }) {
+  return (
+    <div className="py-4 text-center" role="alert">
+      <div className="mx-auto flex size-16 items-center justify-center rounded-full bg-destructive/15">
+        <AlertTriangle className="size-8 text-destructive" aria-hidden="true" />
+      </div>
+      <DialogHeader className="mt-5">
+        <DialogTitle className="text-center text-2xl text-display">
+          Something went wrong
+        </DialogTitle>
+        <DialogDescription className="text-center">
+          Your request wasn’t submitted. Please try again, or contact us on WhatsApp and we’ll book
+          your trial directly.
+        </DialogDescription>
+      </DialogHeader>
+
+      <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center">
+        <Button variant="hero" onClick={onRetry}>
+          Try again
         </Button>
         <Button variant="outlineLight" asChild>
-          <a href="/demo-admin">Open demo dashboard</a>
+          <a
+            href={whatsappLink(`Hi ${gym.shortName}, I'd like to book a free trial.`)}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <MessageCircle aria-hidden="true" /> WhatsApp us
+          </a>
         </Button>
       </div>
     </div>
@@ -277,20 +362,34 @@ function SuccessState({ reference, onClose }: { reference: string; onClose: () =
 function Field({
   id,
   label,
+  hint,
+  required,
   error,
   children,
 }: {
   id: string;
   label: string;
+  hint?: string;
+  required?: boolean;
   error?: string | undefined;
   children: React.ReactNode;
 }) {
   return (
     <div className="space-y-1.5">
-      <Label htmlFor={id}>{label}</Label>
+      <div className="flex items-baseline justify-between gap-2">
+        <Label htmlFor={id}>
+          {label}
+          {required ? (
+            <span className="text-primary" aria-hidden="true">
+              *
+            </span>
+          ) : null}
+        </Label>
+        {hint ? <span className="text-xs text-muted-foreground">{hint}</span> : null}
+      </div>
       {children}
       {error ? (
-        <p className="text-xs text-destructive" role="alert">
+        <p id={`${id}-error`} className="text-xs text-destructive" role="alert">
           {error}
         </p>
       ) : null}
@@ -315,7 +414,12 @@ function SelectField({
 }) {
   return (
     <Select value={value} onValueChange={onChange}>
-      <SelectTrigger id={id} aria-invalid={invalid} className="w-full">
+      <SelectTrigger
+        id={id}
+        aria-invalid={invalid}
+        aria-describedby={invalid ? `${id}-error` : undefined}
+        className="w-full"
+      >
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent>

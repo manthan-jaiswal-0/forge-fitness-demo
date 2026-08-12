@@ -79,3 +79,14 @@ real backend calls will not require rewriting the UI.
 bun install
 bun run dev
 ```
+
+## Backend direction
+
+The frontend is written against a service layer (`src/lib/leads-api.ts`), not a transport.
+Trial requests resolve locally today; the production path is:
+
+React → REST → FastAPI → PostgreSQL
+
+Swapping the body of `submitLead` for a `POST /api/leads` request is the only change required.
+Business-specific values (name, phone, WhatsApp number, email, address, URL) live in
+`src/lib/site-config.ts` so the template can be re-skinned per gym.

@@ -4,28 +4,18 @@
  * In production this is replaced by data from the backend.
  */
 
+import { siteConfig, whatsappLink } from "@/lib/site-config";
+
 export const gym = {
-  name: "Forge Fitness Mumbai",
-  shortName: "Forge Fitness",
-  tagline: "Strength is built, not bought.",
-  intro:
-    "A fictional strength & conditioning studio in Lower Parel, created to demonstrate the Gym Growth Platform.",
-  phoneDisplay: "+91 90000 00000",
-  phoneHref: "tel:+919000000000",
-  whatsapp: "https://wa.me/919000000000",
-  email: "hello@forgefitness.demo",
-  address: {
-    line1: "Unit 4, Mill Works Compound",
-    line2: "Senapati Bapat Marg, Lower Parel",
-    city: "Mumbai 400013",
-  },
+  ...siteConfig,
+  whatsapp: whatsappLink(),
 } as const;
 
 export const stats = [
-  { value: "1,200+", label: "Sessions coached / year" },
-  { value: "8", label: "Certified coaches" },
-  { value: "6", label: "Training programs" },
-  { value: "5,000", label: "Sq. ft. training floor" },
+  { value: "6", label: "Coached programs" },
+  { value: "Max 6", label: "People per group session" },
+  { value: "05:30", label: "Doors open, weekdays" },
+  { value: "Free", label: "First trial session" },
 ] as const;
 
 export const programs = [
@@ -200,26 +190,18 @@ export const faqs = [
 ] as const;
 
 export const fitnessGoals = [
-  "Fat loss",
-  "Build muscle",
-  "Get stronger",
-  "General fitness",
-  "Sport performance",
-  "Rehab / mobility",
+  "Build Strength",
+  "Lose Fat",
+  "Build Muscle",
+  "Improve Fitness",
+  "Personal Training",
+  "Other",
 ] as const;
 
-export const trainingTypes = [
-  "Group classes",
-  "Personal training",
-  "Small group strength",
-  "Gym floor only",
+/** Preferred program options mirror the programs offered on the site. */
+export const programOptions = [
+  ...programs.map((p) => p.name),
   "Not sure yet",
-] as const;
+];
 
-export const preferredTimes = [
-  "Early morning (5:30 – 8:00)",
-  "Morning (8:00 – 12:00)",
-  "Afternoon (12:00 – 16:00)",
-  "Evening (16:00 – 20:00)",
-  "Late evening (20:00 – 22:30)",
-] as const;
+export const preferredTimes = ["Morning", "Afternoon", "Evening"] as const;
