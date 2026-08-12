@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { Flame } from "lucide-react";
 
 import { gym } from "@/lib/demo-data";
+import { whatsappLink, whatsappDefaultMessage } from "@/lib/site-config";
 import { DemoBadge } from "@/components/demo-badge";
 
 export function SiteFooter() {
@@ -32,6 +33,16 @@ export function SiteFooter() {
             <p>
               <a className="hover:text-foreground" href={`mailto:${gym.email}`}>
                 {gym.email}
+              </a>
+            </p>
+            <p>
+              <a
+                className="hover:text-foreground"
+                href={whatsappLink(whatsappDefaultMessage)}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                WhatsApp us
               </a>
             </p>
           </address>

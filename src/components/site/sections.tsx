@@ -35,6 +35,7 @@ import {
   testimonials,
   trainers,
 } from "@/lib/demo-data";
+import { whatsappLink, whatsappDefaultMessage } from "@/lib/site-config";
 import { useTrialDialog } from "@/lib/trial-dialog";
 import { cn } from "@/lib/utils";
 
@@ -349,7 +350,12 @@ export function Contact() {
       <div className="mt-10 grid gap-4 sm:grid-cols-3">
         {[
           { icon: Phone, label: "Call", value: gym.phoneDisplay, href: gym.phoneHref },
-          { icon: MessageCircle, label: "WhatsApp", value: "Message the desk", href: gym.whatsapp },
+          {
+            icon: MessageCircle,
+            label: "WhatsApp",
+            value: "Message the desk",
+            href: whatsappLink(whatsappDefaultMessage),
+          },
           { icon: Mail, label: "Email", value: gym.email, href: `mailto:${gym.email}` },
         ].map((item) => (
           <Card key={item.label} className="border-border bg-card/80">
@@ -359,6 +365,9 @@ export function Contact() {
                 <p className="text-sm font-semibold">{item.label}</p>
                 <a
                   href={item.href}
+                  {...(item.label === "WhatsApp"
+                    ? { target: "_blank", rel: "noopener noreferrer" }
+                    : {})}
                   className="mt-1 block break-words text-sm text-muted-foreground hover:text-foreground"
                 >
                   {item.value}

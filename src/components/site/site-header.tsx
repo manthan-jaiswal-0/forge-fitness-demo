@@ -120,6 +120,17 @@ export function SiteHeader() {
                 </li>
               ))}
               <li>
+                <a
+                  href={whatsappLink(whatsappDefaultMessage)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => setOpen(false)}
+                  className="flex min-h-11 items-center gap-2 rounded-md px-2 text-base font-medium text-foreground hover:bg-accent"
+                >
+                  WhatsApp us
+                </a>
+              </li>
+              <li>
                 <Link
                   to="/demo-admin"
                   onClick={() => setOpen(false)}
