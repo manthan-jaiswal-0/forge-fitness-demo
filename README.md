@@ -1,92 +1,109 @@
-# Forge Fitness Mumbai — Gym Growth Platform (DEMO)
+# Forge Fitness — Gym Growth Platform
 
-A polished, **fictional** demo of the Gym Growth Platform, built to pitch real gyms in Mumbai.
-Everything you see — the gym, its coaches, prices, reviews, contact details and leads — is invented
-sample content. Nothing here is a live business, and no real personal data is used.
+A production-minded demo of a gym lead-generation and business-growth platform designed to help fitness businesses capture, manage, and convert prospective members.
 
-## What the demo shows
+> **Demo project:** All gym information, trainers, pricing, testimonials, contact details, and lead records are fictional sample data. No real business or personal data is used.
 
-**1. Marketing website (`/`)**
-Hero with a Book Free Trial CTA, About, Programs, Memberships, Trainers, Gallery, Testimonials,
-Opening Hours + FAQ, Location, Contact and a closing CTA. Mobile-first, dark "forge" design system,
-restrained motion, keyboard accessible.
+---
 
-**2. Conversion flow**
-Clicking any **Book Free Trial** button opens a validated enquiry form (name, phone, email, fitness
-goal, preferred training type, preferred time, optional message) and finishes on a success state with
-a reference number.
+## 🎯 The Business Problem
 
-**3. Demo dashboard (`/demo-admin`)**
-The business value of the platform: KPI cards (total leads / new / trials booked / joined), a searchable
-and filterable lead table, a lead detail panel with status changes and notes, and a follow-up view with
-overdue flagging. Enquiries submitted on the website appear here immediately.
+Many local gyms rely on fragmented processes to handle new enquiries:
 
-> Demo state lives in React context in the browser. Reloading the page resets it, and a
-> "Reset demo data" button restores the seeded mock leads.
+- Leads arrive through different channels
+- Follow-ups can be missed
+- Staff have limited visibility into enquiry status
+- Trial bookings are difficult to track
+- Lead information can become scattered
+- Owners lack a simple view of their conversion pipeline
 
-## Tech
+The goal of this platform is to demonstrate how a modern digital system could centralize the journey from:
 
-React 19 · TypeScript · TanStack Start (Router + Query) · Tailwind CSS v4 · shadcn/ui · lucide-react
+**Visitor → Enquiry → Trial → Follow-up → Membership**
 
-## Project structure
+---
 
-```
-src/
-  assets/                  generated imagery (hero, gallery, map)
-  components/
-    demo-badge.tsx         reusable "Demo" labelling
-    site/                  marketing site: header, footer, hero, sections, trial dialog
-    ui/                    shadcn primitives
-  lib/
-    demo-data.ts           fictional gym content (programs, plans, coaches, hours…)
-    leads.ts               Lead model, statuses, mock leads, helpers
-    leads-store.tsx        client-side lead store (React context)
-    trial-dialog.tsx       global Book Free Trial dialog provider
-  routes/
-    __root.tsx             shell, fonts, providers
-    index.tsx              marketing website
-    demo-admin.tsx         demo admin dashboard
-  styles.css               design system tokens (oklch) + utilities
-```
+# 🚀 What the Demo Includes
 
-All colours, gradients and shadows are semantic tokens in `src/styles.css`. Components never hardcode
-colours, so the whole template can be rebranded per gym by editing tokens and `demo-data.ts`.
+## 1. Gym Marketing Website
 
-## Explicitly not implemented (by design, this stage)
+A conversion-focused website designed to turn visitors into qualified enquiries.
 
-No Supabase / database, no authentication, no Power Automate, no AI, no email or WhatsApp sending,
-no payments, no analytics. The demo is purely visual and functional.
+### Includes
 
-## How this evolves into production
+- Hero section
+- Book Free Trial CTA
+- About section
+- Training programs
+- Membership plans
+- Trainers
+- Gallery
+- Testimonials
+- Opening hours
+- FAQ
+- Location
+- Contact section
+- Closing CTA
 
-| Area | Demo today | Production next |
-| --- | --- | --- |
-| Lead capture | Form writes to browser context | Server function → Postgres `leads` table |
-| Lead storage | `mockLeads` array | Database with row-level security per gym |
-| Admin access | Public `/demo-admin` route | Authenticated staff area with roles (owner / staff) |
-| Notifications | None | WhatsApp/SMS/email alert to the gym on each new lead |
-| Automation | None | Follow-up reminders and status-based workflows |
-| Content | `demo-data.ts` | Per-gym CMS content, images and branding |
-| Multi-tenant | Single fictional gym | One template, many gyms with their own tokens and domain |
-| Analytics | KPI cards from mock data | Real conversion reporting: enquiry → trial → member |
+The interface uses a responsive, mobile-first design with accessible interactions and restrained motion.
 
-Because the data layer is isolated behind `leads-store.tsx` and `demo-data.ts`, swapping mock data for
-real backend calls will not require rewriting the UI.
+---
 
-## Running locally
+## 2. Lead Capture
 
-```bash
-bun install
-bun run dev
-```
+Visitors can click **Book Free Trial** from multiple locations throughout the website.
 
-## Backend direction
+The enquiry form collects:
 
-The frontend is written against a service layer (`src/lib/leads-api.ts`), not a transport.
-Trial requests resolve locally today; the production path is:
+- Name
+- Phone
+- Email
+- Fitness goal
+- Preferred training type
+- Preferred time
+- Optional message
 
-React → REST → FastAPI → PostgreSQL
+After submission, the user receives a confirmation state with a generated enquiry reference number.
 
-Swapping the body of `submitLead` for a `POST /api/leads` request is the only change required.
-Business-specific values (name, phone, WhatsApp number, email, address, URL) live in
-`src/lib/site-config.ts` so the template can be re-skinned per gym.
+---
+
+## 3. Lead Management Dashboard
+
+The `/demo-admin` route demonstrates the operational side of the platform.
+
+### Dashboard capabilities
+
+- Total leads
+- New enquiries
+- Trials booked
+- Joined members
+- Searchable lead table
+- Lead filtering
+- Lead details
+- Lead status updates
+- Internal notes
+- Follow-up tracking
+- Overdue follow-up indicators
+
+Website enquiries appear in the dashboard immediately during the current browser session.
+
+---
+
+## 4. Lead Lifecycle
+
+The demo models a simplified business pipeline:
+
+```text
+Website Visitor
+      ↓
+Free Trial Enquiry
+      ↓
+New Lead
+      ↓
+Follow-up
+      ↓
+Trial Booked
+      ↓
+Membership Decision
+      ↓
+Joined
