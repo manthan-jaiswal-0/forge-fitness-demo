@@ -22,7 +22,6 @@ import {
 import { DemoBadge } from "@/components/demo-badge";
 import { fitnessGoals, preferredTimes, programOptions, gym } from "@/lib/demo-data";
 import { whatsappLink } from "@/lib/site-config";
-import { useLeads } from "@/lib/leads-store";
 import { submitLead, type LeadPayload } from "@/lib/leads-api";
 
 type FieldKey = "name" | "phone" | "email" | "goal" | "program" | "preferredTime" | "message";
@@ -45,7 +44,6 @@ export function BookTrialDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
-  const { addLead } = useLeads();
   const [form, setForm] = React.useState(emptyForm);
   const [errors, setErrors] = React.useState<Errors>({});
   const [state, setState] = React.useState<"form" | "sending" | "done" | "error">("form");
@@ -93,20 +91,7 @@ export function BookTrialDialog({
     };
 
     try {
-      const result = await submitLead(payload, {
-        persist: (data) => {
-          const lead = addLead({
-            name: data.name,
-            phone: data.phone,
-            email: data.email ?? "",
-            goal: data.goal,
-            trainingType: data.program ?? "Not specified",
-            preferredTime: data.preferredTime ?? "Flexible",
-            message: data.message,
-          });
-          return { id: lead.id, createdAt: lead.createdAt };
-        },
-      });
+      const result = await submitLead(payload);
       setSubmittedName(payload.name.split(" ")[0] ?? payload.name);
       setReference(result.id);
       setState("done");

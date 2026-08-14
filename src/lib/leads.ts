@@ -24,7 +24,7 @@ export type Lead = {
   id: string;
   name: string;
   phone: string;
-  email: string;
+  email?: string | undefined;
   goal: string;
   trainingType: string;
   preferredTime: string;
@@ -32,7 +32,9 @@ export type Lead = {
   status: LeadStatus;
   source: string;
   createdAt: string;
+  updatedAt?: string | undefined;
   followUpOn?: string | undefined;
+  lastContactedAt?: string | undefined;
   notes: LeadNote[];
 };
 

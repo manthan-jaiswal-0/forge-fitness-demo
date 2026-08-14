@@ -2,19 +2,12 @@
  * Lead capture service layer.
  *
  * UI components never talk to a transport directly — they call `submitLead`.
- * Today this resolves locally (demo build, no backend). When the FastAPI
- * service exists, replace the body of `submitLead` with a real request:
+ * This module calls the FastAPI backend at VITE_API_BASE_URL.
  *
- *   const res = await fetch(`${API_BASE_URL}/api/leads`, {
- *     method: "POST",
- *     headers: { "Content-Type": "application/json" },
- *     body: JSON.stringify(payload),
- *   });
- *   if (!res.ok) throw new LeadSubmissionError();
- *   return (await res.json()) as LeadResponse;
- *
- * The payload shape below is the intended request body for POST /api/leads.
+ * The payload shape below matches POST /api/leads exactly.
  */
+
+const API_BASE = import.meta.env["VITE_API_BASE_URL"] ?? "http://localhost:8000";
 
 export type LeadPayload = {
   name: string;
@@ -39,21 +32,20 @@ export class LeadSubmissionError extends Error {
   }
 }
 
-type SubmitOptions = {
-  /** Demo hook: persists the lead into the in-session dashboard store. */
-  persist: (payload: LeadPayload) => LeadResponse;
-};
+export async function submitLead(payload: LeadPayload): Promise<LeadResponse> {
+  const res = await fetch(`${API_BASE}/api/leads`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(payload),
+  });
 
-export async function submitLead(
-  payload: LeadPayload,
-  { persist }: SubmitOptions,
-): Promise<LeadResponse> {
-  // Simulated network latency so the loading state is demonstrable.
-  await new Promise((resolve) => setTimeout(resolve, 800));
-
-  if (!payload.name || !payload.phone || !payload.goal) {
-    throw new LeadSubmissionError("Missing required fields");
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    throw new LeadSubmissionError(
+      body?.detail ?? `Submission failed (${res.status})`,
+    );
   }
 
-  return persist(payload);
+  return (await res.json()) as LeadResponse;
 }

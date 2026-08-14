@@ -1,10 +1,13 @@
 import * as React from "react";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { createFileRoute } from "@tanstack/react-router";
 import {
   ArrowLeft,
   CalendarClock,
   Flame,
+  Loader2,
+  LogOut,
+  RefreshCw,
   Search,
   TrendingUp,
   UserPlus,
@@ -15,7 +18,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -41,7 +43,8 @@ import {
   type Lead,
   type LeadStatus,
 } from "@/lib/leads";
-import { useLeads } from "@/lib/leads-store";
+import { LeadsProvider, useLeads } from "@/lib/leads-store";
+import { getMe, logout } from "@/lib/auth-api";
 import { cn } from "@/lib/utils";
 
 const title = "Demo dashboard — Gym Growth Platform";
@@ -58,16 +61,51 @@ export const Route = createFileRoute("/demo-admin")({
       { name: "robots", content: "noindex" },
     ],
   }),
-  component: DemoAdmin,
+  component: DemoAdminPage,
 });
 
+function DemoAdminPage() {
+  const navigate = useNavigate();
+  const [authChecked, setAuthChecked] = React.useState(false);
+
+  React.useEffect(() => {
+    getMe().then((user) => {
+      if (!user) {
+        navigate({ to: "/admin-login" });
+      } else {
+        setAuthChecked(true);
+      }
+    });
+  }, [navigate]);
+
+  if (!authChecked) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <Loader2 className="size-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  return (
+    <LeadsProvider>
+      <DemoAdmin />
+    </LeadsProvider>
+  );
+}
+
 function DemoAdmin() {
-  const { leads, setStatus, addNote, resetDemo } = useLeads();
+  const { leads, setStatus, refresh, isLoading, isError, errorMessage } = useLeads();
+  const navigate = useNavigate();
   const [query, setQuery] = React.useState("");
   const [statusFilter, setStatusFilter] = React.useState<"ALL" | LeadStatus>("ALL");
   const [selectedId, setSelectedId] = React.useState<string | null>(null);
 
   const selected = leads.find((l) => l.id === selectedId) ?? null;
+
+  async function handleLogout() {
+    await logout();
+    navigate({ to: "/admin-login" });
+  }
 
   const filtered = React.useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -88,7 +126,7 @@ function DemoAdmin() {
   );
 
   const kpis = [
-    { label: "Total leads", value: leads.length, icon: Users, hint: "All time (demo)" },
+    { label: "Total leads", value: leads.length, icon: Users, hint: "All time" },
     {
       label: "New leads",
       value: leads.filter((l) => l.status === "NEW").length,
@@ -119,19 +157,24 @@ function DemoAdmin() {
             </span>
             <div>
               <p className="flex items-center gap-2 text-display text-base leading-none">
-                Gym Growth Platform <DemoBadge />
+                Gym Growth Platform
               </p>
               <p className="text-xs text-muted-foreground">Forge Fitness Mumbai · Lead desk</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={resetDemo}>
-              Reset demo data
+            <Button variant="ghost" size="sm" onClick={refresh} disabled={isLoading}>
+              <RefreshCw className={cn("size-4", isLoading && "animate-spin")} aria-hidden="true" />
+              Refresh
             </Button>
             <Button variant="outlineLight" size="sm" asChild>
               <Link to="/">
                 <ArrowLeft aria-hidden="true" /> Website
               </Link>
+            </Button>
+            <Button variant="ghost" size="sm" onClick={handleLogout}>
+              <LogOut className="size-4" aria-hidden="true" />
+              Logout
             </Button>
           </div>
         </div>
@@ -143,11 +186,20 @@ function DemoAdmin() {
           <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
             Every enquiry from the website lands here so the gym can work it to a decision.
           </p>
-          <DemoNotice className="mt-4">
-            All names, numbers and emails below are fictional demo records. Changes live in your
-            browser only and reset on reload.
-          </DemoNotice>
+          {isError ? (
+            <DemoNotice className="mt-4">
+              {errorMessage === "Not authenticated"
+                ? "You must be logged in to view leads."
+                : `Failed to load leads: ${errorMessage ?? "Unknown error"}`}
+            </DemoNotice>
+          ) : null}
         </div>
+
+        {isLoading && leads.length === 0 ? (
+          <div className="flex items-center justify-center gap-2 py-16 text-muted-foreground">
+            <Loader2 className="size-5 animate-spin" /> Loading leads…
+          </div>
+        ) : null}
 
         <section aria-label="Key metrics" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {kpis.map((kpi) => (
@@ -264,7 +316,6 @@ function DemoAdmin() {
         lead={selected}
         onClose={() => setSelectedId(null)}
         onStatusChange={setStatus}
-        onAddNote={addNote}
       />
     </div>
   );
@@ -372,18 +423,11 @@ function LeadDetailSheet({
   lead,
   onClose,
   onStatusChange,
-  onAddNote,
 }: {
   lead: Lead | null;
   onClose: () => void;
   onStatusChange: (id: string, status: LeadStatus) => void;
-  onAddNote: (id: string, body: string) => void;
 }) {
-  const [note, setNote] = React.useState("");
-
-  React.useEffect(() => {
-    setNote("");
-  }, [lead?.id]);
 
   return (
     <Sheet open={!!lead} onOpenChange={(open) => !open && onClose()}>
@@ -460,29 +504,9 @@ function LeadDetailSheet({
                   )}
                 </ul>
 
-                <form
-                  className="mt-3 space-y-2"
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    if (!note.trim()) return;
-                    onAddNote(lead.id, note.trim());
-                    setNote("");
-                  }}
-                >
-                  <Label htmlFor="new-note" className="sr-only">
-                    Add a note
-                  </Label>
-                  <Textarea
-                    id="new-note"
-                    rows={3}
-                    value={note}
-                    onChange={(e) => setNote(e.target.value)}
-                    placeholder="Log a call, a message or an outcome…"
-                  />
-                  <Button type="submit" variant="hero" size="sm" disabled={!note.trim()}>
-                    Add note
-                  </Button>
-                </form>
+                <p className="mt-3 text-xs text-muted-foreground">
+                  Note management coming soon.
+                </p>
               </div>
             </div>
           </>
@@ -492,7 +516,7 @@ function LeadDetailSheet({
   );
 }
 
-function Detail({ label, value }: { label: string; value: string }) {
+function Detail({ label, value }: { label: string; value?: string }) {
   return (
     <div>
       <dt className="text-xs uppercase tracking-wider text-muted-foreground">{label}</dt>

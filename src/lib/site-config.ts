@@ -10,7 +10,7 @@ export const siteConfig = {
   tagline: "Strength is built, not bought.",
   intro:
     "A fictional strength & conditioning studio in Lower Parel, created to demonstrate the Gym Growth Platform.",
-  url: "https://forge-fitness-demo.lovable.app",
+  url: (import.meta.env["VITE_SITE_URL"] as string | undefined) ?? "http://localhost:3000",
   phoneDisplay: "+91 90000 00000",
   phoneHref: "tel:+919000000000",
   /** Digits only, international format — used to build wa.me links. */
