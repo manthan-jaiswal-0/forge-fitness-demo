@@ -1,109 +1,163 @@
-# Forge Fitness — Gym Growth Platform
+# Forge Fitness Mumbai — Gym Growth Platform
 
-A production-minded demo of a gym lead-generation and business-growth platform designed to help fitness businesses capture, manage, and convert prospective members.
+A production-grade vertical slice of the **Gym Growth Platform**: a reusable template that turns a gym website into a lead-capture and management system.
 
-> **Demo project:** All gym information, trainers, pricing, testimonials, contact details, and lead records are fictional sample data. No real business or personal data is used.
+Forge Fitness Mumbai is the first (fictional) gym. All names, coaches, prices and contact details are invented demo content.
 
----
+## Architecture
 
-## 🎯 The Business Problem
+```
+React + TypeScript (TanStack Start)
+        │
+        ▼
+  REST API (fetch)
+        │
+        ▼
+  FastAPI + Pydantic
+        │
+        ▼
+  PostgreSQL (SQLAlchemy)
+```
 
-Many local gyms rely on fragmented processes to handle new enquiries:
+**End-to-end flow:**
+Website → Book Free Trial form → `POST /api/leads` → PostgreSQL → Authenticated admin dashboard → Persistent lead management
 
-- Leads arrive through different channels
-- Follow-ups can be missed
-- Staff have limited visibility into enquiry status
-- Trial bookings are difficult to track
-- Lead information can become scattered
-- Owners lack a simple view of their conversion pipeline
+## What it includes
 
-The goal of this platform is to demonstrate how a modern digital system could centralize the journey from:
+**1. Marketing website (`/`)**
+Hero, About, Programs, Memberships, Trainers, Gallery, Testimonials, FAQ, Location, Contact.
+Mobile-first dark design system, keyboard accessible.
 
-**Visitor → Enquiry → Trial → Follow-up → Membership**
+**2. Lead capture**
+"Book Free Trial" opens a validated form (name, phone, optional email, goal, program, time, message).
+Submits to `POST /api/leads` → saved to PostgreSQL → success state with reference number.
 
----
+**3. Admin login (`/admin-login`)**
+Session-based authentication (HTTP-only cookies). Credentials checked against Argon2 password hash.
 
-# 🚀 What the Demo Includes
+**4. Lead dashboard (`/demo-admin`)**
+Protected route — redirects to login if unauthenticated. KPI cards, searchable/filterable lead table,
+lead detail panel with status changes, follow-up tracking. Logout button. Data persists across
+refreshes and server restarts.
 
-## 1. Gym Marketing Website
+## Tech stack
 
-A conversion-focused website designed to turn visitors into qualified enquiries.
+| Layer | Technology |
+|-------|-----------|
+| Frontend | React 19, TypeScript, TanStack Start (Router + Query), Tailwind CSS v4, shadcn/ui, lucide-react |
+| Backend | Python, FastAPI, Pydantic, SQLAlchemy, Argon2 (password hashing), Starlette SessionMiddleware |
+| Database | PostgreSQL |
+| Build | Vite 8, Nitro (SSR) |
 
-### Includes
+## Project structure
 
-- Hero section
-- Book Free Trial CTA
-- About section
-- Training programs
-- Membership plans
-- Trainers
-- Gallery
-- Testimonials
-- Opening hours
-- FAQ
-- Location
-- Contact section
-- Closing CTA
+```
+src/
+  assets/                  imagery (hero, gallery, map)
+  components/
+    site/                  marketing site: header, footer, hero, sections, trial dialog
+    ui/                    shadcn primitives
+  lib/
+    auth-api.ts            login/logout/me API client
+    leads-api.ts           public lead submission API client
+    leads-admin-api.ts     authenticated lead management API client
+    leads-store.tsx        React context wrapping the admin API
+    leads.ts               Lead model, statuses, helpers
+    demo-data.ts           fictional gym content (programs, plans, coaches, hours)
+    site-config.ts         business-specific values (name, phone, address, URLs)
+    trial-dialog.tsx       global Book Free Trial dialog provider
+  routes/
+    __root.tsx             shell, fonts, providers
+    index.tsx              marketing website
+    admin-login.tsx        admin login page
+    demo-admin.tsx         authenticated admin dashboard
+  styles.css               design system tokens (oklch) + utilities
 
-The interface uses a responsive, mobile-first design with accessible interactions and restrained motion.
+backend/
+  app/
+    main.py                FastAPI app — CORS, session, routers, startup
+    config.py              pydantic-settings — reads .env
+    database.py            SQLAlchemy engine + session factory
+    models.py              Gym, Lead, LeadNote, AdminUser
+    schemas.py             Pydantic request/response models
+    dependencies.py        DB session + auth dependencies
+    id_gen.py              Sequential LD-XXXX ID generator
+    init_db.py             create_all + seed gym & admin user
+    routers/
+      auth.py              login, logout, me
+      leads.py             POST (public), GET/PATCH (authenticated)
+  requirements.txt
+  .env.example
+```
 
----
+## API endpoints
 
-## 2. Lead Capture
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| `GET` | `/api/health` | No | Health check |
+| `POST` | `/api/leads` | No | Submit lead (booking form) |
+| `GET` | `/api/leads` | Yes | List leads (paginated, filterable) |
+| `GET` | `/api/leads/{id}` | Yes | Full lead detail + notes |
+| `PATCH` | `/api/leads/{id}` | Yes | Update status / fields |
+| `POST` | `/api/auth/login` | No | Login → session cookie |
+| `POST` | `/api/auth/logout` | No | Clear session |
+| `GET` | `/api/auth/me` | Yes | Current user info |
 
-Visitors can click **Book Free Trial** from multiple locations throughout the website.
+## Running locally
 
-The enquiry form collects:
+### Prerequisites
 
-- Name
-- Phone
-- Email
-- Fitness goal
-- Preferred training type
-- Preferred time
-- Optional message
+- Node.js 18+
+- Python 3.10+
+- PostgreSQL (running on localhost:5432)
 
-After submission, the user receives a confirmation state with a generated enquiry reference number.
+### Database setup
 
----
+Create a database named `forge_fitness`:
 
-## 3. Lead Management Dashboard
+```sql
+CREATE DATABASE forge_fitness;
+```
 
-The `/demo-admin` route demonstrates the operational side of the platform.
+### Backend
 
-### Dashboard capabilities
+```bash
+cd backend
+cp .env.example .env
+# Edit .env with your DATABASE_URL and a random SECRET_KEY
+pip install -r requirements.txt
+python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+```
 
-- Total leads
-- New enquiries
-- Trials booked
-- Joined members
-- Searchable lead table
-- Lead filtering
-- Lead details
-- Lead status updates
-- Internal notes
-- Follow-up tracking
-- Overdue follow-up indicators
+On first start, the backend auto-creates tables and seeds a default admin user.
 
-Website enquiries appear in the dashboard immediately during the current browser session.
+### Frontend
 
----
+```bash
+cp .env.example .env
+# .env.example is pre-configured for localhost
+npm install
+npm run dev
+```
 
-## 4. Lead Lifecycle
+### Default admin credentials
 
-The demo models a simplified business pipeline:
+- **Email:** `admin@forgefitness.demo`
+- **Password:** `changeme`
 
-```text
-Website Visitor
-      ↓
-Free Trial Enquiry
-      ↓
-New Lead
-      ↓
-Follow-up
-      ↓
-Trial Booked
-      ↓
-Membership Decision
-      ↓
-Joined
+## Rebranding for another gym
+
+Business-specific values live in `src/lib/site-config.ts` and `src/lib/demo-data.ts`.
+All colours are semantic tokens in `src/styles.css`. Editing these files re-skins the template
+without touching components.
+
+## Database schema
+
+Multi-tenant extensible — `gyms` table with `gym_id` foreign key on `leads`:
+
+```
+gyms (id, name, created_at)
+  └── leads (id, gym_id, name, phone, email, goal, training_type, status, ...)
+        └── lead_notes (id, lead_id, author, body, created_at)
+  └── admin_users (id, gym_id, email, password_hash)
+```
