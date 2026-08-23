@@ -34,8 +34,8 @@ app.add_middleware(
     SessionMiddleware,
     secret_key=settings.secret_key,
     max_age=settings.session_max_age,
-    same_site="lax",      # "strict" blocks cross-site requests; "lax" is safe for same-domain
-    https_only=False,     # set to True behind HTTPS in production
+    same_site=settings.session_same_site,
+    https_only=settings.session_https_only,
     session_cookie="forge_session",
 )
 

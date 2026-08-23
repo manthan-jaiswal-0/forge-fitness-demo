@@ -19,6 +19,8 @@ class Settings(BaseSettings):
     # Security
     secret_key: str = "change-me-in-production-use-openssl-rand-hex-32"
     session_max_age: int = 60 * 60 * 8  # 8 hours in seconds
+    session_same_site: str = "lax"
+    session_https_only: bool = False
 
     # CORS
     frontend_origin: str = "http://localhost:3000"
