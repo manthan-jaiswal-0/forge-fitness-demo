@@ -35,5 +35,7 @@ dist-ssr
 .env
 /backend/.env
 
-# Lovable platform (removed)
-.lovable/
+# Python
+__pycache__/
+*.py[cod]
+*$py.class

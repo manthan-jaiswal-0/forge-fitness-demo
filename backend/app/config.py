@@ -34,5 +34,8 @@ class Settings(BaseSettings):
     gym_id: str = "forge-fitness-mumbai"
     gym_name: str = "Forge Fitness Mumbai"
 
+        # Automation
+    power_automate_webhook_url: str = ""
+
 
 settings = Settings()

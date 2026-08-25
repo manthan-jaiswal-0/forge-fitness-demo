@@ -6,15 +6,18 @@ GET/PATCH require authentication (admin dashboard).
 """
 
 from datetime import datetime, timezone
+import logging
 
+import httpx
 from fastapi import APIRouter, HTTPException, Query, status
 from sqlalchemy import func, or_
 
 from app import models, schemas
-from app.dependencies import AuthUserDep, DbDep
-from app.database import get_db
-from app.id_gen import generate_lead_id
 from app.config import settings
+from app.dependencies import AuthUserDep, DbDep
+from app.id_gen import generate_lead_id
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/leads", tags=["leads"])
 
@@ -23,7 +26,11 @@ router = APIRouter(prefix="/api/leads", tags=["leads"])
 # POST /api/leads — public, called from the booking form
 # ---------------------------------------------------------------------------
 
-@router.post("", response_model=schemas.LeadCreatedResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    response_model=schemas.LeadCreatedResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 def create_lead(payload: schemas.LeadCreate, db: DbDep):
     lead_id = generate_lead_id(db, settings.gym_id)
 
@@ -40,9 +47,35 @@ def create_lead(payload: schemas.LeadCreate, db: DbDep):
         source=payload.source,
         status="NEW",
     )
+
     db.add(lead)
     db.commit()
     db.refresh(lead)
+
+    # Trigger Power Automate after the lead is successfully saved.
+    # Only name and phone are sent for the current demo automation.
+    if settings.power_automate_webhook_url:
+        try:
+            with httpx.Client(timeout=10.0) as client:
+                response = client.post(
+                    settings.power_automate_webhook_url,
+                    json={
+                        "name": lead.name,
+                        "phone": lead.phone,
+                    },
+                )
+                response.raise_for_status()
+
+            logger.info(
+                "Power Automate triggered successfully for lead %s",
+                lead.id,
+            )
+
+        except Exception:
+            logger.exception(
+                "Power Automate trigger failed for lead %s",
+                lead.id,
+            )
 
     return schemas.LeadCreatedResponse(
         id=lead.id,
@@ -58,12 +91,25 @@ def create_lead(payload: schemas.LeadCreate, db: DbDep):
 def list_leads(
     current_user: AuthUserDep,
     db: DbDep,
-    q: str | None = Query(default=None, description="Search name, phone, email, goal"),
-    status_filter: str | None = Query(default=None, alias="status"),
+    q: str | None = Query(
+        default=None,
+        description="Search name, phone, email, goal",
+    ),
+    status_filter: str | None = Query(
+        default=None,
+        alias="status",
+    ),
     page: int = Query(default=1, ge=1),
-    page_size: int = Query(default=50, ge=1, le=200, alias="pageSize"),
+    page_size: int = Query(
+        default=50,
+        ge=1,
+        le=200,
+        alias="pageSize",
+    ),
 ):
-    query = db.query(models.Lead).filter(models.Lead.gym_id == current_user.gym_id)
+    query = db.query(models.Lead).filter(
+        models.Lead.gym_id == current_user.gym_id
+    )
 
     if status_filter and status_filter != "ALL":
         query = query.filter(models.Lead.status == status_filter)
@@ -81,6 +127,7 @@ def list_leads(
         )
 
     total = query.count()
+
     leads = (
         query.order_by(models.Lead.created_at.desc())
         .offset((page - 1) * page_size)
@@ -117,14 +164,25 @@ def list_leads(
 # ---------------------------------------------------------------------------
 
 @router.get("/{lead_id}", response_model=schemas.LeadRead)
-def get_lead(lead_id: str, current_user: AuthUserDep, db: DbDep):
+def get_lead(
+    lead_id: str,
+    current_user: AuthUserDep,
+    db: DbDep,
+):
     lead = (
         db.query(models.Lead)
-        .filter(models.Lead.id == lead_id, models.Lead.gym_id == current_user.gym_id)
+        .filter(
+            models.Lead.id == lead_id,
+            models.Lead.gym_id == current_user.gym_id,
+        )
         .first()
     )
+
     if lead is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lead not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Lead not found",
+        )
 
     return schemas.LeadRead(
         id=lead.id,
@@ -167,11 +225,18 @@ def update_lead(
 ):
     lead = (
         db.query(models.Lead)
-        .filter(models.Lead.id == lead_id, models.Lead.gym_id == current_user.gym_id)
+        .filter(
+            models.Lead.id == lead_id,
+            models.Lead.gym_id == current_user.gym_id,
+        )
         .first()
     )
+
     if lead is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lead not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Lead not found",
+        )
 
     update_data = payload.model_dump(exclude_none=True)
 
@@ -181,11 +246,13 @@ def update_lead(
         "lastContactedAt": "last_contacted_at",
         "trainingType": "training_type",
     }
+
     for schema_field, model_field in field_map.items():
         if schema_field in update_data:
             setattr(lead, model_field, update_data[schema_field])
 
     lead.updated_at = datetime.now(timezone.utc)
+
     db.commit()
     db.refresh(lead)
 
