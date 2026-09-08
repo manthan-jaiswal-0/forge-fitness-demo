@@ -36,6 +36,6 @@ class Settings(BaseSettings):
 
         # Automation
     power_automate_webhook_url: str = ""
-
+    whatsapp_webhook_verify_token: str = ""
 
 settings = Settings()

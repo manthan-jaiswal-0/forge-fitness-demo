@@ -8,7 +8,7 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from app.config import settings
 from app.init_db import init_db
-from app.routers import leads, auth
+from app.routers import leads, auth, whatsapp
 
 app = FastAPI(
     title="Forge Fitness API",
@@ -44,6 +44,8 @@ app.add_middleware(
 # ---------------------------------------------------------------------------
 app.include_router(leads.router)
 app.include_router(auth.router)
+app.include_router(whatsapp.router)
+
 
 
 # ---------------------------------------------------------------------------
