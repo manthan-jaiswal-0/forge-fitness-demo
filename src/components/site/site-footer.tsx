@@ -60,6 +60,12 @@ export function SiteFooter() {
           >
             Open the demo dashboard <DemoBadge />
           </Link>
+          <a
+            href="/privacy-policy"
+            className="mt-3 inline-flex text-sm font-medium text-primary hover:underline"
+          >
+            Privacy Policy
+          </a>
         </div>
       </div>
 
