@@ -79,7 +79,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       {
         name: "description",
         content:
-          "Fictional demo of a premium Mumbai gym website with a free-trial booking flow and a mock lead dashboard.",
+          "Premium Mumbai gym website with free-trial booking, lead capture, and WhatsApp follow-up automation.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

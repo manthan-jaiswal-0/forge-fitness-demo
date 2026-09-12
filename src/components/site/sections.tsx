@@ -178,7 +178,7 @@ export function Memberships() {
         ))}
       </div>
       <p className="mt-6 text-center text-xs text-muted-foreground">
-        Demo pricing shown in INR for illustration only.
+        Membership plans and pricing can be tailored to your training goals.
       </p>
     </Section>
   );
